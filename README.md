@@ -13,7 +13,9 @@ Aplicación web moderna, **oscura y segura** diseñada para **promotores de vent
 
 ---
 
-## 🚀 Acceso de Promotores — ¡No necesitas instalar nada!
+# 🚀 PARTE 1 · Uso para Promotores
+
+## Acceso de Promotores — ¡No necesitas instalar nada!
 
 Abre la web desde tu **móvil o laptop** (navegador Chrome o Safari), **regístrate y empieza a trabajar**. No hace falta descargar ni instalar ninguna aplicación.
 
@@ -31,8 +33,6 @@ Abre la web desde tu **móvil o laptop** (navegador Chrome o Safari), **regístr
 - **"No me deja entrar"**: asegúrate de haber pulsado el enlace de confirmación del correo.
 - **"Olvidé mi contraseña"**: usa la recuperación; el sistema te pedirá crear una contraseña nueva antes de entrar.
 - **"No veo mis datos"**: cada promotor ve únicamente sus propios datos (por seguridad). Si te falta algo, contacta con el administrador.
-
-> 📌 *Sustituye la URL de ejemplo de arriba por la real de tu despliegue.*
 
 ---
 
@@ -62,6 +62,50 @@ Abre la web desde tu **móvil o laptop** (navegador Chrome o Safari), **regístr
 | `/guia` | **Guía / Pautas** | KPIs, normas de Tickelia y contactos de referencia |
 | `/configuracion` | **Configuración** | Datos personales (zona → **TSM automático**), enlace de reservas y **cambio de contraseña** |
 | `/reset-password` | **Reestablecer contraseña** | Pantalla obligatoria que fuerza un nuevo password tras una recuperación de cuenta |
+
+---
+
+# 🔧 PARTE 2 · Para Desarrolladores
+
+## Requisitos previos
+
+- **Node.js** (v18 o superior) y `npm`.
+- Una cuenta en **[Supabase](https://supabase.com)** para la base de datos y autenticación.
+- (Opcional) Una cuenta en **[Vercel](https://vercel.com)** para desplegar la app en la nube.
+
+---
+
+## 🚀 Guía de Instalación y Uso Local
+
+### 1. Clonar el Repositorio
+```bash
+git clone https://github.com/RicardoRdrgz/gestion-ventas-pixel.git
+cd gestion-ventas-pixel
+```
+
+### 2. Instalar Dependencias
+```bash
+npm install
+```
+
+### 3. Configurar Variables de Entorno
+Crea un archivo `.env` en la raíz del proyecto basándote en la plantilla `.env.example`:
+
+```env
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-anon-key-aqui
+```
+
+> 🔒 Este archivo está excluido del repositorio mediante `.gitignore`. **Nunca** subas tus claves.
+
+### 4. Configurar la Base de Datos en Supabase
+Ejecuta el script SQL [`supabase_schema.sql`](./supabase_schema.sql) en el **SQL Editor** de tu consola de Supabase para crear las tablas, activar RLS y los índices.
+
+### 5. Iniciar el Servidor de Desarrollo
+```bash
+npm run dev
+```
+Accede desde tu navegador a `http://localhost:3000`.
 
 ---
 
@@ -103,40 +147,6 @@ CREATE POLICY "RLS_ventas_select" ON public.ventas
 
 ---
 
-## 🚀 Guía de Instalación y Uso Local
-
-### 1. Clonar el Repositorio
-```bash
-git clone https://github.com/RicardoRdrgz/gestion-ventas-pixel.git
-cd gestion-ventas-pixel
-```
-
-### 2. Instalar Dependencias
-```bash
-npm install
-```
-
-### 3. Configurar Variables de Entorno
-Crea un archivo `.env` en la raíz del proyecto basándote en la plantilla `.env.example`:
-
-```env
-VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
-VITE_SUPABASE_ANON_KEY=tu-anon-key-aqui
-```
-
-> 🔒 Este archivo está excluido del repositorio mediante `.gitignore`. **Nunca** subas tus claves.
-
-### 4. Configurar la Base de Datos en Supabase
-Ejecuta el script SQL [`supabase_schema.sql`](./supabase_schema.sql) en el **SQL Editor** de tu consola de Supabase para crear las tablas, activar RLS y los índices.
-
-### 5. Iniciar el Servidor de Desarrollo
-```bash
-npm run dev
-```
-Accede desde tu navegador a `http://localhost:3000`.
-
----
-
 ## 📁 Estructura del Proyecto
 
 ```text
@@ -169,7 +179,7 @@ gestion-ventas-pixel/
 
 ---
 
-## 🌐 Despliegue Gratuito en la Nube (Vercel)
+## 🌐 Despliegue en la Nube (Vercel)
 
 Puedes publicar la app sin pagar y acceder desde cualquier dispositivo sin tu PC encendida.
 
@@ -182,8 +192,6 @@ Puedes publicar la app sin pagar y acceder desde cualquier dispositivo sin tu PC
 **Después del despliegue, actualiza Supabase** para que los emails (confirmación y recuperación) apunten a tu URL pública:
 - `Authentication → URL Configuration → Site URL`: `https://gestion-ventas-pixel.vercel.app`
 - `Redirect URLs`: añade `https://gestion-ventas-pixel.vercel.app/reset-password` y `https://gestion-ventas-pixel.vercel.app/**`
-
-Obtendrás una **URL HTTPS pública accesible desde cualquier parte sin coste alguno**. 🎉
 
 ---
 
