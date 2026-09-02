@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# TypeScript build artifacts (generated, never commit)
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Vite build cache
+.vite
+*.vite
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -29,4 +37,6 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
-*.env
+.env.*
+!.env.example
+.vercel
