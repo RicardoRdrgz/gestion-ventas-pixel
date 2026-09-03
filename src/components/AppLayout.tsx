@@ -33,7 +33,7 @@ export function AppLayout() {
       {/* Sidebar */}
       <aside className="hidden md:flex flex-col w-60 bg-zinc-950 border-r border-zinc-800/70 sticky top-0 h-screen shrink-0">
         <div className="flex items-center gap-3 px-5 h-16 border-b border-zinc-800/70">
-          <img src="/assets/google-pixel-logo.svg" alt="Google Pixel" className="w-9 h-9 rounded-lg" />
+          <img src="/assets/google-g-logo.svg" alt="Google" className="w-9 h-9 rounded-lg" />
           <div className="leading-tight">
             <div className="text-sm font-bold text-zinc-100 font-[Google_Sans]">Pixel Promoter</div>
             <div className="text-[0.65rem] text-zinc-500">Gestión de Ventas</div>
@@ -95,7 +95,7 @@ export function AppLayout() {
         <header className="md:hidden sticky top-0 z-30 bg-zinc-950 border-b border-zinc-800/70" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center justify-between px-4 h-14">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/assets/google-pixel-logo.svg" alt="Google Pixel" className="w-8 h-8 rounded-lg" />
+              <img src="/assets/google-g-logo.svg" alt="Google" className="w-8 h-8 rounded-lg" />
               <span className="text-sm font-bold text-zinc-100 font-[Google_Sans]">Pixel Promoter</span>
             </Link>
             <div className="flex items-center gap-2">
