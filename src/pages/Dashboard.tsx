@@ -8,6 +8,7 @@ import {
 } from '../lib/business';
 import { fmtEur, fmtDate, escapeHtml } from '../lib/utils';
 import { Card, Badge, Spinner, Empty } from '../components/ui';
+import { VentasGoalCard } from '../components/VentasGoalCard';
 import {
   TrendingUp, Clock, Wallet, AlertTriangle, Target, User, Smartphone,
   CheckCircle2, Calendar, ShoppingCart, ChevronRight, ArrowRight,
@@ -155,6 +156,9 @@ export function Dashboard() {
           </Card>
         </Link>
       </div>
+
+      {/* Objetivo de ventas (semanal/mensual) */}
+      <VentasGoalCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Comisiones */}

@@ -4,6 +4,7 @@ import { objApi } from '../lib/api';
 import { Card, Badge, Spinner, Empty, Modal, Field, Button, ConfirmDialog } from '../components/ui';
 import { escapeHtml, fmtDate, monthKey } from '../lib/utils';
 import { sugerirPrioridad, PRIORIDADES, TIPOS_OBJETIVO } from '../lib/business';
+import { VentasGoalCard } from '../components/VentasGoalCard';
 import { Plus, Pencil, Trash2, Sparkles, History, CheckSquare } from 'lucide-react';
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -78,6 +79,9 @@ export function Objetivos() {
           <Button onClick={() => setModal({})}><Plus className="w-3.5 h-3.5" /> Nuevo objetivo</Button>
         </div>
       </div>
+
+      {/* Progreso de objetivos de ventas */}
+      <VentasGoalCard />
 
       {/* Progreso */}
       <Card>

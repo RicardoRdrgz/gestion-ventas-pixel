@@ -280,6 +280,9 @@ export interface ConfigUsuario {
   tienda?: string | null;
   zona?: string | null;
   mi_rol?: string | null;
+  /** Objetivo de ventas en nº de dispositivos: semanal (lunes-domingo) y mensual. */
+  objetivo_semanal?: number | null;
+  objetivo_mensual?: number | null;
   updated_at: string;
 }
 

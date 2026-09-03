@@ -1,0 +1,17 @@
+{
+  "name": "Gestión de Ventas Google Pixel",
+  "short_name": "Pixel Promoter",
+  "description": "Dashboard de promotores Google Pixel: ventas, comisiones, objetivos, gastos y reuniones.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ventaApi, configApi } from '../lib/api';
+import { ventaApi, configApi, catApi } from '../lib/api';
 import { supabase } from '../lib/supabase';
-import { Card, Badge, Spinner, Empty, Button } from '../components/ui';
+import { Card, Badge, Spinner, Empty, Button, Modal, Field } from '../components/ui';
 import { fmtDate, fmtEur, escapeHtml, sanitizeUrl } from '../lib/utils';
 import { ESTADOS_VENTA } from '../types/database.types';
-import { ShoppingCart, Plus, ExternalLink, Search } from 'lucide-react';
+import { ShoppingCart, Plus, ExternalLink, Search, Upload } from 'lucide-react';
+
+type FilaImport = { fecha: string; producto: string; cantidad: number; precio: number; notas: string; error?: string };
 
 export function Ventas() {
   const uid = useAuth().user?.id ?? null;
@@ -17,6 +19,12 @@ export function Ventas() {
   const [q, setQ] = useState('');
   const [fEstado, setFEstado] = useState<string>('all');
   const [fMes, setFMes] = useState<string>('all');
+
+  const [importOpen, setImportOpen] = useState(false);
+  const [importadoTexto, setImportadoTexto] = useState('');
+  const [filas, setFilas] = useState<FilaImport[]>([]);
+  const [aciertaConfirmar, setAciertaConfirmar] = useState(false);
+  const [importando, setImportando] = useState(false);
 
   useEffect(() => {
     if (!uid) return;
@@ -79,6 +87,99 @@ export function Ventas() {
 
   const reservasUrl = sanitizeUrl(config?.reservas_url);
 
+  const parsearFecha = (s: string): string | null => {
+    const t = (s ?? '').trim();
+    if (!t) return null;
+    let d: Date | null = null;
+    const barra = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+    if (barra) {
+      const [_, dd, mm, yyyy] = barra;
+      const anio = yyyy.length === 2 ? `20${yyyy}` : yyyy;
+      d = new Date(Number(anio), Number(mm) - 1, Number(dd), 12);
+    } else {
+      const iso = new Date(t);
+      if (!isNaN(iso.getTime())) d = iso;
+    }
+    if (!d) return null;
+    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12)).toISOString();
+  };
+
+  const cerrarImport = () => {
+    setImportOpen(false);
+    setImportadoTexto('');
+    setFilas([]);
+    setAciertaConfirmar(false);
+  };
+
+  const parsearPegado = () => {
+    const filasNuevas: FilaImport[] = [];
+    const lineas = importadoTexto.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    lineas.forEach((linea, idx) => {
+      const campos = linea.split('\t').map((c) => c.trim());
+      // Si no hay tabuladores, intentar separar por ; o ,
+      const sep = campos.length === 1 ? linea.split(/[;,]/).map((c) => c.trim()) : campos;
+      if (idx === 0 && /fecha|producto|cant|precio/i.test(sep.join(' '))) return; // encabezado
+      const [fechaRaw, producto, cantRaw, precioRaw, ...resto] = sep;
+      const fechas = parsearFecha(fechaRaw);
+      if (!fechas) { filasNuevas.push({ fecha: '', producto: producto ?? '', cantidad: 0, precio: 0, notas: '', error: `Fecha no válida (${fechaRaw ?? ''})` }); return; }
+      const cantidad = parseInt((cantRaw ?? '').replace(/\D/g, ''), 10);
+      const precio = parseFloat((precioRaw ?? '').replace(',', '.').replace(/[^\d.]/g, ''));
+      if (!producto) { filasNuevas.push({ fecha: fechas, producto: '', cantidad, precio: isNaN(precio) ? 0 : precio, notas: resto.join(' '), error: 'Producto vacío' }); return; }
+      filasNuevas.push({
+        fecha: fechas,
+        producto,
+        cantidad: isNaN(cantidad) || cantidad < 1 ? 1 : cantidad,
+        precio: isNaN(precio) ? 0 : precio,
+        notas: resto.join(' '),
+      });
+    });
+    setFilas(filasNuevas);
+    setAciertaConfirmar(true);
+  };
+
+  const importar = async () => {
+    if (!uid) return;
+    setImportando(true);
+    try {
+      const catalog = await catApi.list(uid);
+      const valNombres = new Map(catalog.map((p) => [p.nombre.toLowerCase(), p]));
+      let creados = 0;
+      const errores: string[] = [];
+      for (const fila of filas) {
+        if (fila.error) { errores.push(`${fila.producto || '(fila)'}: ${fila.error}`); continue; }
+        let prod = [...valNombres.entries()].find(([k]) => fila.producto.toLowerCase().includes(k))?.[1];
+        if (!prod) {
+          prod = await catApi.create(uid, { nombre: fila.producto, categoria: 'otro', precio_default: fila.precio, stock: 0 });
+          valNombres.set(prod.nombre.toLowerCase(), prod);
+          creados++;
+        }
+        const precio = fila.precio > 0 ? fila.precio : Number(prod.precio_default) || 0;
+        await ventaApi.create(uid, {
+          fecha: fila.fecha,
+          estado: 'completada',
+          notas: fila.notas || undefined,
+          items: [{ producto_id: prod.id, producto_nombre: prod.nombre, cantidad: fila.cantidad, precio_unitario: precio }],
+        });
+      }
+      const [v] = await Promise.all([ventaApi.list(uid)]);
+      setVentas(v);
+      if (v.length > 0) {
+        const ids = v.map((x: any) => x.id);
+        const { data } = await supabase.from('ventas_items').select('*').eq('user_id', uid).in('venta_id', ids);
+        setVentasItems((data ?? []) as any[]);
+      }
+      let msg = `Se importaron ${filas.length - errores.length} ventas.`;
+      if (creados > 0) msg += ` Se crearon ${creados} producto(s) nuevos.`;
+      if (errores.length > 0) msg += ` Errores: ${errores.join(' · ')}`;
+      alert(msg);
+      cerrarImport();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setImportando(false);
+    }
+  };
+
   if (loading) return <Spinner label="Cargando ventas…" />;
 
   return (
@@ -94,6 +195,7 @@ export function Ventas() {
               <Button variant="ghost"><ExternalLink className="w-3.5 h-3.5" /> Reservas Google Pixel</Button>
             </a>
           )}
+          <Button variant="ghost" onClick={() => setImportOpen(true)}><Upload className="w-3.5 h-3.5" /> Importar</Button>
           <Link to="/ventas/nueva">
             <Button><Plus className="w-3.5 h-3.5" /> Nueva venta</Button>
           </Link>
@@ -160,6 +262,59 @@ export function Ventas() {
           })}
         </div>
       )}
+
+      {/* Modal de importación */}
+      <Modal open={importOpen} onClose={cerrarImport} title="Importar ventas">
+        {!aciertaConfirmar ? (
+          <form
+            className="space-y-3"
+            onSubmit={(e) => { e.preventDefault(); parsearPegado(); }}
+          >
+            <p className="text-xs text-zinc-400">
+              Pega aquí las filas copiadas de tu hoja de cálculo. Usa la siguiente plantilla (separadas por tabulador,
+              punto y coma o coma):
+            </p>
+            <pre className="text-[0.7rem] text-zinc-500 bg-zinc-950 border border-zinc-800 rounded-lg p-3 overflow-x-auto whitespace-pre">
+Fecha\tProducto\tCantidad\tPrecio\tNotas/Cliente
+02/09/2026\tPixel 11 128GB\t1\t109\tTienda Centro
+02/09/2026\tPixel 11 Pro 256GB\t1\t1099\t
+            </pre>
+            <Field label="Datos pegados">
+              <textarea
+                className="inp font-mono"
+                rows={8}
+                placeholder={'02/09/2026\tPixel 11 128GB\t1\t109\tNota\n03/09/2026\tPixel 11 Pro 256GB\t2\t1099\t'}
+                value={importadoTexto}
+                onChange={(e) => setImportadoTexto(e.target.value)}
+              />
+            </Field>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={cerrarImport}>Cancelar</Button>
+              <Button type="submit">Previsualizar</Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-zinc-400">Revisa las filas detectadas. Los productos inexistentes se crearán automáticamente.</p>
+            <div className="max-h-64 overflow-y-auto rounded-lg border border-zinc-800 divide-y divide-zinc-800/60">
+              {filas.length === 0 && <div className="p-3 text-xs text-zinc-500">No se detectaron filas.</div>}
+              {filas.map((f, i) => (
+                <div key={i} className={`px-3 py-2 text-xs flex items-center justify-between gap-3 ${f.error ? 'bg-red-500/10 text-red-400' : 'bg-zinc-950 text-zinc-300'}`}>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate">{escapeHtml(f.producto || '(sin producto)')} {f.cantidad > 0 && `×${f.cantidad}`}</div>
+                    <div className="text-[0.65rem] text-zinc-500 truncate">{fmtDate(f.fecha)} · {fmtEur(f.precio)}{f.notas ? ` · ${escapeHtml(f.notas)}` : ''}</div>
+                  </div>
+                  {f.error ? <Badge color="red">Error</Badge> : <Badge color="green">ok</Badge>}
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setAciertaConfirmar(false)}>Volver</Button>
+              <Button disabled={importando} onClick={importar}>{importando ? 'Importando…' : 'Confirmar importación'}</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -519,6 +519,8 @@ export const configApi = {
       tienda: c.tienda !== undefined ? cleanText(c.tienda) || null : undefined,
       zona: c.zona !== undefined ? cleanText(c.zona) || null : undefined,
       mi_rol: c.mi_rol !== undefined ? cleanText(c.mi_rol) || null : undefined,
+      objetivo_semanal: c.objetivo_semanal !== undefined ? Number(c.objetivo_semanal) || 0 : undefined,
+      objetivo_mensual: c.objetivo_mensual !== undefined ? Number(c.objetivo_mensual) || 0 : undefined,
       updated_at: new Date().toISOString(),
     };
     const { error } = c.id

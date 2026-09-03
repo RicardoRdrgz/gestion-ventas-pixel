@@ -6,9 +6,26 @@
   body {
     background-color: #09090b;
     color: #f4f4f5;
+    /* Safe areas para iOS (notch) y Android (barra gestual) */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Google Sans', 'Roboto', sans-serif;
+  }
+
+  /* Altura mínima estable con dvh para evitar saltos del viewport en móvil */
+  #root {
+    min-height: 100vh;
+  }
+  @supports (min-height: 100dvh) {
+    #root {
+      min-height: 100dvh;
+    }
   }
 }
 

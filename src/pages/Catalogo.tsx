@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { catApi, clienteApi, promotorApi, tiendaApi, superiorApi } from '../lib/api';
+import { catApi, clienteApi } from '../lib/api';
 import {
   Card, Badge, Spinner, Empty, Modal, Field, Button, Table, ConfirmDialog,
 } from '../components/ui';
 import { fmtEur, escapeHtml } from '../lib/utils';
-import { CATEGORIAS, ROLES } from '../types/database.types';
-import { ZONAS } from '../lib/business';
-import { Plus, Pencil, Trash2, Smartphone, Users, Store, Network, User } from 'lucide-react';
+import { CATEGORIAS } from '../types/database.types';
+import { Plus, Pencil, Trash2, Smartphone, Users } from 'lucide-react';
 
-type Tab = 'productos' | 'clientes' | 'promotores' | 'tiendas' | 'superiores';
+type Tab = 'productos' | 'clientes';
 
 export function Catalogo() {
   const uid = useAuth().user?.id ?? null;
@@ -18,15 +17,12 @@ export function Catalogo() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-zinc-100 font-[Google_Sans]">Catálogo</h1>
-        <p className="text-sm text-zinc-500">Productos, clientes, promotores, tiendas y jerarquía.</p>
+        <p className="text-sm text-zinc-500">Productos y clientes.</p>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {([
           ['productos', 'Productos', Smartphone],
           ['clientes', 'Clientes', Users],
-          ['promotores', 'Promotores', User],
-          ['tiendas', 'Tiendas', Store],
-          ['superiores', 'Superiores', Network],
         ] as [Tab, string, any][]).map(([key, label, Icon]) => (
           <button
             key={key}
@@ -41,9 +37,6 @@ export function Catalogo() {
       </div>
       {tab === 'productos' && <Productos uid={uid} />}
       {tab === 'clientes' && <Clientes uid={uid} />}
-      {tab === 'promotores' && <Promotores uid={uid} />}
-      {tab === 'tiendas' && <Tiendas uid={uid} />}
-      {tab === 'superiores' && <Superiores uid={uid} />}
     </div>
   );
 }
@@ -216,197 +209,5 @@ function ClienteForm({ data, onSave }: { data: any; onSave: (f: any) => void }) 
       <Field label="Notas"><textarea className="inp" rows={2} value={form.notas} onChange={(e) => set('notas', e.target.value)} /></Field>
       <div className="flex justify-end pt-2"><Button type="submit">Guardar</Button></div>
     </form>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Promotores
-// ---------------------------------------------------------------------------
-
-function Promotores({ uid }: { uid: string | null }) {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [del, setDel] = useState<any>(null);
-  const [modal, setModal] = useState<any>(null);
-
-  useEffect(() => {
-    if (!uid) return;
-    promotorApi.list(uid).then(setItems).catch(console.error).finally(() => setLoading(false));
-  }, [uid]);
-
-  const guardar = async (form: any) => {
-    if (!uid) return;
-    try {
-      await promotorApi.upsert(uid, form);
-      setModal(null);
-      setItems(await promotorApi.list(uid));
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
-  if (loading) return <Spinner />;
-  return (
-    <>
-      <div className="flex justify-end mb-3">
-        <Button onClick={() => setModal({})}><Plus className="w-3.5 h-3.5" /> Añadir promotor</Button>
-      </div>
-      <Card pad={false}>
-        <Table headers={['Nombre', 'Rol', 'Tienda', 'Zona', '']}>
-          {items.length === 0 ? <tr><td colSpan={5}><Empty msg="Sin promotores" /></td></tr> : items.map((p) => (
-            <tr key={p.id} className="border-b border-zinc-800/50 last:border-0">
-              <td className="py-2.5 px-3"><div className="font-medium text-zinc-200">{escapeHtml(p.nombre)}</div>{p.email && <div className="text-[0.65rem] text-zinc-500">{escapeHtml(p.email)}</div>}</td>
-              <td className="px-3"><Badge color="gray">{p.rol}</Badge></td>
-              <td className="px-3 text-zinc-400">{escapeHtml(p.tienda) || '—'}</td>
-              <td className="px-3 text-zinc-400">{escapeHtml(p.zona)}</td>
-              <td className="px-3"><div className="flex gap-1">
-                <button onClick={() => setModal(p)} className="p-1.5 text-zinc-400 hover:text-blue-400"><Pencil className="w-3.5 h-3.5" /></button>
-                <button onClick={() => setDel(p)} className="p-1.5 text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-              </div></td>
-            </tr>
-          ))}
-        </Table>
-      </Card>
-      <Modal open={!!modal} onClose={() => setModal(null)} title={modal?.id ? 'Editar promotor' : 'Nuevo promotor'}>
-        {modal && <PromotorForm data={modal} onSave={guardar} />}
-      </Modal>
-      <ConfirmDialog open={!!del} title="Eliminar promotor" message={`¿Eliminar a "${del?.nombre}"?`} onCancel={() => setDel(null)} onConfirm={async () => { if (uid && del) { await promotorApi.remove(uid, del.id); setDel(null); setItems(await promotorApi.list(uid)); } }} />
-    </>
-  );
-}
-
-function PromotorForm({ data, onSave }: { data: any; onSave: (f: any) => void }) {
-  const [form, setForm] = useState({ id: data.id, nombre: data.nombre ?? '', email: data.email ?? '', telefono: data.telefono ?? '', tienda: data.tienda ?? '', rol: data.rol ?? 'Promotor', zona: data.zona ?? 'Otra', activo: data.activo ?? true });
-  const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
-  return (
-    <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-      <Field label="Nombre *"><input className="inp" required value={form.nombre} onChange={(e) => set('nombre', e.target.value)} /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Email"><input className="inp" value={form.email} onChange={(e) => set('email', e.target.value)} /></Field>
-        <Field label="Teléfono"><input className="inp" value={form.telefono} onChange={(e) => set('telefono', e.target.value)} /></Field>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Rol"><select className="inp" value={form.rol} onChange={(e) => set('rol', e.target.value)}>{ROLES.map((r) => <option key={r} value={r}>{r}</option>)}</select></Field>
-        <Field label="Tienda"><input className="inp" value={form.tienda} onChange={(e) => set('tienda', e.target.value)} /></Field>
-        <Field label="Zona"><select className="inp" value={form.zona} onChange={(e) => set('zona', e.target.value)}>{ZONAS.map((z) => <option key={z} value={z}>{z}</option>)}</select></Field>
-      </div>
-      <div className="flex justify-end pt-2"><Button type="submit">Guardar</Button></div>
-    </form>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tiendas
-// ---------------------------------------------------------------------------
-
-function Tiendas({ uid }: { uid: string | null }) {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [del, setDel] = useState<any>(null);
-  const [modal, setModal] = useState<any>(null);
-
-  useEffect(() => {
-    if (!uid) return;
-    tiendaApi.list(uid).then(setItems).catch(console.error).finally(() => setLoading(false));
-  }, [uid]);
-
-  const guardar = async (form: any) => {
-    if (!uid) return;
-    await tiendaApi.upsert(uid, form);
-    setModal(null);
-    setItems(await tiendaApi.list(uid));
-  };
-
-  if (loading) return <Spinner />;
-  return (
-    <>
-      <div className="flex justify-end mb-3">
-        <Button onClick={() => setModal({})}><Plus className="w-3.5 h-3.5" /> Añadir tienda</Button>
-      </div>
-      <Card pad={false}>
-        <Table headers={['Tienda', 'Ubicación', '']}>
-          {items.length === 0 ? <tr><td colSpan={3}><Empty msg="Sin tiendas" /></td></tr> : items.map((t) => (
-            <tr key={t.id} className="border-b border-zinc-800/50 last:border-0">
-              <td className="py-2.5 px-3 font-medium text-zinc-200">{escapeHtml(t.nombre)}</td>
-              <td className="px-3 text-zinc-400">{escapeHtml(t.ubicacion) || '—'}</td>
-              <td className="px-3"><div className="flex gap-1">
-                <button onClick={() => setModal(t)} className="p-1.5 text-zinc-400 hover:text-blue-400"><Pencil className="w-3.5 h-3.5" /></button>
-                <button onClick={() => setDel(t)} className="p-1.5 text-zinc-400 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-              </div></td>
-            </tr>
-          ))}
-        </Table>
-      </Card>
-      <Modal open={!!modal} onClose={() => setModal(null)} title={modal?.id ? 'Editar tienda' : 'Nueva tienda'}>
-        {modal && <TiendaForm data={modal} onSave={guardar} />}
-      </Modal>
-      <ConfirmDialog open={!!del} title="Eliminar tienda" message={`¿Eliminar "${del?.nombre}"?`} onCancel={() => setDel(null)} onConfirm={async () => { if (uid && del) { await tiendaApi.remove(uid, del.id); setDel(null); setItems(await tiendaApi.list(uid)); } }} />
-    </>
-  );
-}
-
-function TiendaForm({ data, onSave }: { data: any; onSave: (f: any) => void }) {
-  const [form, setForm] = useState({ id: data.id, nombre: data.nombre ?? '', ubicacion: data.ubicacion ?? '' });
-  const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
-  return (
-    <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-      <Field label="Nombre *"><input className="inp" required value={form.nombre} onChange={(e) => set('nombre', e.target.value)} /></Field>
-      <Field label="Ubicación"><input className="inp" value={form.ubicacion} onChange={(e) => set('ubicacion', e.target.value)} /></Field>
-      <div className="flex justify-end pt-2"><Button type="submit">Guardar</Button></div>
-    </form>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Superiores (jerarquía por zona)
-// ---------------------------------------------------------------------------
-
-function Superiores({ uid }: { uid: string | null }) {
-  const [sup, setSup] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<any>(null);
-
-  useEffect(() => {
-    if (!uid) return;
-    superiorApi.get(uid).then((s) => {
-      setSup(s);
-      setForm(s ?? { zona: 'Otra', tsm: '', coordinadora: '', supervisora: '', kam: '', backoffice: '' });
-    }).finally(() => setLoading(false));
-  }, [uid]);
-
-  const guardar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uid) return;
-    try {
-      const saved = await superiorApi.upsert(uid, { ...form, id: sup?.id });
-      setSup(saved);
-      setForm(saved);
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
-  if (loading) return <Spinner />;
-  const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
-  return (
-    <Card title="Jerarquía de superiores por zona" actions={<a href="#config" className="text-xs text-blue-400">configurar en Ajustes</a>}>
-      {!form ? <Empty msg="Sin configuración" /> : (
-        <form onSubmit={guardar} className="space-y-3">
-          <Field label="Zona *">
-            <select className="inp" value={form.zona} onChange={(e) => set('zona', e.target.value)}>
-              {ZONAS.map((z) => <option key={z} value={z}>{z}</option>)}
-            </select>
-          </Field>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Field label="TSM"><input className="inp" value={form.tsm ?? ''} onChange={(e) => set('tsm', e.target.value)} /></Field>
-            <Field label="Coordinadora"><input className="inp" value={form.coordinadora ?? ''} onChange={(e) => set('coordinadora', e.target.value)} /></Field>
-            <Field label="Supervisora"><input className="inp" value={form.supervisora ?? ''} onChange={(e) => set('supervisora', e.target.value)} /></Field>
-            <Field label="KAM"><input className="inp" value={form.kam ?? ''} onChange={(e) => set('kam', e.target.value)} /></Field>
-            <Field label="BackOffice"><input className="inp" value={form.backoffice ?? ''} onChange={(e) => set('backoffice', e.target.value)} /></Field>
-          </div>
-          <div className="flex justify-end"><Button type="submit">Guardar jerarquía</Button></div>
-        </form>
-      )}
-    </Card>
   );
 }

@@ -15,13 +15,16 @@ export interface ComisionConfig {
   tope: number;
 }
 
-/** Configuración de comisiones por producto. Precio por unidad pagada. */
+/** Configuración de comisiones por producto. Precio por unidad pagada.
+ *  Solo estos productos generan comisión (el resto, 0€). */
 export const COMISIONES_PRODUCTO: Record<string, { etiqueta: string; comision: number }> = {
-  'Pixel 11': { etiqueta: 'Pixel 11', comision: 20 },
+  'Pixel 11 Pro XL': { etiqueta: 'Pixel 11 Pro XL', comision: 25 },
   'Pixel 11 Pro': { etiqueta: 'Pixel 11 Pro', comision: 25 },
+  'Pixel 11': { etiqueta: 'Pixel 11', comision: 20 },
 };
 
-export const COMISION_DEFAULT = 15;
+/** Por defecto solo comisionan los productos del mapa COMISIONES_PRODUCTO; el resto 0€. */
+export const COMISION_DEFAULT = 0;
 
 export interface ComisionItem {
   producto: string;
@@ -48,8 +51,9 @@ export function calcularComisiones(
   config: ComisionConfig = { gratis: 3, tope: 14 },
 ): ResumenComisiones {
   const porProducto = new Map<string, number>();
+  const claves = Object.keys(COMISIONES_PRODUCTO).sort((a, b) => b.length - a.length);
   for (const v of ventasMes) {
-    const clave = Object.keys(COMISIONES_PRODUCTO).find((k) =>
+    const clave = claves.find((k) =>
       v.producto_nombre.toLowerCase().includes(k.toLowerCase()),
     ) ?? v.producto_nombre;
     porProducto.set(clave, (porProducto.get(clave) ?? 0) + Number(v.cantidad));
@@ -126,16 +130,16 @@ export interface JerarquiaZona {
  * base de datos; aquí se mantienen como configuración de negocio por defecto.
  */
 export const JERARQUIA_POR_ZONA: Record<Zona, JerarquiaZona> = {
-  'Noroeste': { zona: 'Noroeste', tsm: 'Carlos Núñez', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Noroeste', backoffice: 'BackOffice ES' },
-  'Cat Norte': { zona: 'Cat Norte', tsm: 'Laura Vidal', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Cataluña', backoffice: 'BackOffice ES' },
-  'Cat Centro': { zona: 'Cat Centro', tsm: 'Laura Vidal', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Cataluña', backoffice: 'BackOffice ES' },
-  'Cat Sur': { zona: 'Cat Sur', tsm: 'Laura Vidal', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Cataluña', backoffice: 'BackOffice ES' },
-  'Mad Norte': { zona: 'Mad Norte', tsm: 'Miguel Ángel R.', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Madrid', backoffice: 'BackOffice ES' },
-  'Mad Centro': { zona: 'Mad Centro', tsm: 'Miguel Ángel R.', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Madrid', backoffice: 'BackOffice ES' },
-  'Mad Sur': { zona: 'Mad Sur', tsm: 'Miguel Ángel R.', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Madrid', backoffice: 'BackOffice ES' },
-  'Levante': { zona: 'Levante', tsm: 'Alicia Ferrer', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Levante', backoffice: 'BackOffice ES' },
-  'Andalucía': { zona: 'Andalucía', tsm: 'Rafael Ortega', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: 'KAM Andalucía', backoffice: 'BackOffice ES' },
-  'Otra': { zona: 'Otra', tsm: 'Por asignar', coordinadora: 'Isabel M.', supervisora: 'Sandra R.', kam: '—', backoffice: 'BackOffice ES' },
+  'Noroeste': { zona: 'Noroeste', tsm: 'Jon Ander', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Cat Norte': { zona: 'Cat Norte', tsm: 'Yohanna Morales', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Cat Centro': { zona: 'Cat Centro', tsm: 'Yohanna Morales', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Cat Sur': { zona: 'Cat Sur', tsm: 'Sergi Marco', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Mad Norte': { zona: 'Mad Norte', tsm: 'Yasin', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Mad Centro': { zona: 'Mad Centro', tsm: 'Alejandro Martínez', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Mad Sur': { zona: 'Mad Sur', tsm: 'Alberto Martín', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Levante': { zona: 'Levante', tsm: 'Francisco Cerdán', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Andalucía': { zona: 'Andalucía', tsm: 'Sandra Lafuente', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
+  'Otra': { zona: 'Otra', tsm: 'Por asignar', coordinadora: 'Isabel Hoyas', supervisora: 'Carlos Mendez', kam: 'Julia Cuenca', backoffice: 'Noemí González' },
 };
 
 export function tsmDeZona(zona: Zona | string | undefined): string {
@@ -215,3 +219,75 @@ export function esMismoMes(iso: string, ref: Date = new Date()): boolean {
 }
 
 export { monthKey, startOfMonth, endOfMonth };
+
+// ---------------------------------------------------------------------------
+// Progreso de ventas (objetivo de dispositivos semanal/mensual)
+// ---------------------------------------------------------------------------
+
+export interface ProgresoVentasMetas {
+  vendidas: number;
+  objetivo: number;
+  pct: number;
+}
+
+export interface ProgresoVentas {
+  semanal: ProgresoVentasMetas;
+  mensual: ProgresoVentasMetas;
+}
+
+function inicioSemana(ref: Date): Date {
+  const d = new Date(ref);
+  const dow = (d.getDay() + 6) % 7; // 0 = lunes
+  d.setDate(d.getDate() - dow);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function unidadesVendidas(
+  ventas: { id: string; fecha: string; estado: string }[],
+  items: { venta_id: string; cantidad: number }[],
+  desde: Date,
+  hasta: Date,
+): number {
+  const ids = new Set(ventas.filter((v) => v.estado === 'completada').map((v) => v.id));
+  let total = 0;
+  for (const v of ventas) {
+    if (!ids.has(v.id)) continue;
+    const d = new Date(v.fecha);
+    if (d < desde || d > hasta) continue;
+    total += items.filter((i) => i.venta_id === v.id).reduce((a, i) => a + Number(i.cantidad || 0), 0);
+  }
+  return total;
+}
+
+/**
+ * Calcula el nº de dispositivos vendidos (unidades) en la semana y el mes actuales,
+ * comparándolos con los objetivos configurados.
+ */
+export function calcularProgresoVentas(
+  ventas: { id: string; fecha: string; estado: string }[],
+  items: { venta_id: string; cantidad: number }[],
+  objetivos: { semanal?: number | null; mensual?: number | null },
+): ProgresoVentas {
+  const now = new Date();
+
+  const inicioSem = inicioSemana(now);
+  const finSem = new Date(inicioSem);
+  finSem.setDate(finSem.getDate() + 7);
+
+  const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1);
+  const finMes = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const semanal = unidadesVendidas(ventas, items, inicioSem, finSem);
+  const mensual = unidadesVendidas(ventas, items, inicioMes, finMes);
+
+  const metaSem = Number(objetivos.semanal) || 0;
+  const metaMes = Number(objetivos.mensual) || 0;
+
+  const pct = (vendidas: number, meta: number) => (meta > 0 ? Math.round((vendidas / meta) * 100) : 0);
+
+  return {
+    semanal: { vendidas: semanal, objetivo: metaSem, pct: pct(semanal, metaSem) },
+    mensual: { vendidas: mensual, objetivo: metaMes, pct: pct(mensual, metaMes) },
+  };
+}

@@ -94,7 +94,7 @@ export function AppLayout() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar (mobile nav + alert bell) */}
-        <header className="md:hidden sticky top-0 z-30 bg-zinc-950 border-b border-zinc-800/70">
+        <header className="md:hidden sticky top-0 z-30 bg-zinc-950 border-b border-zinc-800/70" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center justify-between px-4 h-14">
             <Link to="/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 via-violet-500 to-red-500 flex items-center justify-center text-white">

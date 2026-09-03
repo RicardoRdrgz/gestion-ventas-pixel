@@ -249,6 +249,8 @@ CREATE TABLE IF NOT EXISTS public.configuracion_usuario (
     tienda TEXT,
     zona TEXT,
     mi_rol TEXT,
+    objetivo_semanal INTEGER,
+    objetivo_mensual INTEGER,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
