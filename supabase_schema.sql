@@ -1,13 +1,3 @@
--- ==============================================================================
--- ESQUEMA DE BASE DE DATOS Y POLÍTICAS RLS PARA GESTIÓN DE VENTAS GOOGLE PIXEL
--- Todas las tablas están aisladas por usuario (user_id -> auth.users).
--- RLS habilitado en TODAS las tablas (OWASP: acceso a datos por usuario).
--- ==============================================================================
-
--- ---------------------------------------------------------------------------
--- 1. inventario_pixel -> EVOLUCIONADO a "productos" (catálogo con detalles)
--- Por compatibilidad se mantiene el nombre, añadiendo columnas nuevas.
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.inventario_pixel (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -30,9 +20,6 @@ ALTER TABLE public.inventario_pixel ADD COLUMN IF NOT EXISTS especificaciones TE
 ALTER TABLE public.inventario_pixel ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE public.inventario_pixel ADD COLUMN IF NOT EXISTS imagen_url TEXT;
 
--- ---------------------------------------------------------------------------
--- 2. clientes
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.clientes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -43,9 +30,6 @@ CREATE TABLE IF NOT EXISTS public.clientes (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- ---------------------------------------------------------------------------
--- 3. promotores
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.promotores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -58,9 +42,6 @@ CREATE TABLE IF NOT EXISTS public.promotores (
     activo BOOLEAN NOT NULL DEFAULT true
 );
 
--- ---------------------------------------------------------------------------
--- 4. tiendas
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.tiendas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -69,9 +50,6 @@ CREATE TABLE IF NOT EXISTS public.tiendas (
     activo BOOLEAN NOT NULL DEFAULT true
 );
 
--- ---------------------------------------------------------------------------
--- 5. superiores (jerarquía por zona)
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.superiores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -83,9 +61,6 @@ CREATE TABLE IF NOT EXISTS public.superiores (
     backoffice TEXT
 );
 
--- ---------------------------------------------------------------------------
--- 6. ventas (cabecera) — multi-ítem
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.ventas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -97,9 +72,6 @@ CREATE TABLE IF NOT EXISTS public.ventas (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- ---------------------------------------------------------------------------
--- 7. ventas_items (líneas de detalle)
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.ventas_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -111,9 +83,6 @@ CREATE TABLE IF NOT EXISTS public.ventas_items (
     descuento NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0)
 );
 
--- ---------------------------------------------------------------------------
--- 8. eventos (asociados a una venta o independientes)
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.eventos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -125,9 +94,6 @@ CREATE TABLE IF NOT EXISTS public.eventos (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- ---------------------------------------------------------------------------
--- 9. formularios (semana/mes/día) y cumplimientos
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.formularios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -149,9 +115,6 @@ CREATE TABLE IF NOT EXISTS public.cumplimientos_form (
     notas TEXT
 );
 
--- ---------------------------------------------------------------------------
--- 10. reuniones (sin transcripción) y puntos clave
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.reuniones (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -172,9 +135,6 @@ CREATE TABLE IF NOT EXISTS public.puntos_clave (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- ---------------------------------------------------------------------------
--- 11. objetivos, check_items, historial_objetivos
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.objetivos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -208,9 +168,6 @@ CREATE TABLE IF NOT EXISTS public.historial_objetivos (
     fecha_completado TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- ---------------------------------------------------------------------------
--- 12. incidencias, reportes, incidencia_items
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.reportes_incidencia (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -235,9 +192,6 @@ CREATE TABLE IF NOT EXISTS public.incidencia_items (
     accion TEXT
 );
 
--- ---------------------------------------------------------------------------
--- 13. gastos (Tickelia / Sodexo)
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.gastos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -252,9 +206,6 @@ CREATE TABLE IF NOT EXISTS public.gastos (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- ---------------------------------------------------------------------------
--- 14. configuracion_usuario (preferencias y datos personales)
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.configuracion_usuario (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -270,9 +221,6 @@ CREATE TABLE IF NOT EXISTS public.configuracion_usuario (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- ==============================================================================
--- ACTIVAR ROW LEVEL SECURITY EN TODAS LAS TABLAS
--- ==============================================================================
 DO $$
 DECLARE t text;
 BEGIN
@@ -286,20 +234,17 @@ BEGIN
     'gastos','configuracion_usuario'
   ] LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t);
-    EXECUTE format(
-      'CREATE POLICY IF NOT EXISTS "RLS_%I_select" ON public.%I FOR SELECT TO authenticated USING (auth.uid() = user_id);', t, t);
-    EXECUTE format(
-      'CREATE POLICY IF NOT EXISTS "RLS_%I_insert" ON public.%I FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);', t, t);
-    EXECUTE format(
-      'CREATE POLICY IF NOT EXISTS "RLS_%I_update" ON public.%I FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);', t, t);
-    EXECUTE format(
-      'CREATE POLICY IF NOT EXISTS "RLS_%I_delete" ON public.%I FOR DELETE TO authenticated USING (auth.uid() = user_id);', t, t);
+    EXECUTE format('DROP POLICY IF EXISTS "RLS_%I_select" ON public.%I;', t, t);
+    EXECUTE format('CREATE POLICY "RLS_%I_select" ON public.%I FOR SELECT TO authenticated USING (auth.uid() = user_id);', t, t);
+    EXECUTE format('DROP POLICY IF EXISTS "RLS_%I_insert" ON public.%I;', t, t);
+    EXECUTE format('CREATE POLICY "RLS_%I_insert" ON public.%I FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);', t, t);
+    EXECUTE format('DROP POLICY IF EXISTS "RLS_%I_update" ON public.%I;', t, t);
+    EXECUTE format('CREATE POLICY "RLS_%I_update" ON public.%I FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);', t, t);
+    EXECUTE format('DROP POLICY IF EXISTS "RLS_%I_delete" ON public.%I;', t, t);
+    EXECUTE format('CREATE POLICY "RLS_%I_delete" ON public.%I FOR DELETE TO authenticated USING (auth.uid() = user_id);', t, t);
   END LOOP;
 END $$;
 
--- ==============================================================================
--- ÍNDICES DE RENDIMIENTO
--- ==============================================================================
 CREATE INDEX IF NOT EXISTS idx_inventario_uid ON public.inventario_pixel(user_id);
 CREATE INDEX IF NOT EXISTS idx_ventas_uid ON public.ventas(user_id);
 CREATE INDEX IF NOT EXISTS idx_ventas_fecha ON public.ventas(fecha DESC);
