@@ -8,6 +8,22 @@
 -- 1. inventario_pixel -> EVOLUCIONADO a "productos" (catálogo con detalles)
 -- Por compatibilidad se mantiene el nombre, añadiendo columnas nuevas.
 -- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.inventario_pixel (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+    nombre TEXT NOT NULL,
+    categoria TEXT NOT NULL DEFAULT 'otro',
+    color TEXT,
+    capacidad TEXT,
+    especificaciones TEXT,
+    precio_default NUMERIC NOT NULL DEFAULT 0,
+    stock INTEGER NOT NULL DEFAULT 0,
+    activo BOOLEAN NOT NULL DEFAULT true,
+    imagen_url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
 ALTER TABLE public.inventario_pixel ADD COLUMN IF NOT EXISTS color TEXT;
 ALTER TABLE public.inventario_pixel ADD COLUMN IF NOT EXISTS capacidad TEXT;
 ALTER TABLE public.inventario_pixel ADD COLUMN IF NOT EXISTS especificaciones TEXT;
