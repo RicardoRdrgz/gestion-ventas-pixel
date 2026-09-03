@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, Smartphone } from 'lucide-react';
+import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 function GoogleLogo() {
   return (
@@ -51,12 +51,28 @@ export const AuthModal: React.FC = () => {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-zinc-900 rounded-2xl shadow-xl border border-zinc-800 overflow-hidden">
-        {/* Banner de la marca (placeholder) */}
-        <div className="h-20 bg-gradient-to-r from-blue-600 via-violet-600 to-red-500 relative">
-          <div className="absolute inset-0 flex items-center justify-center gap-3">
-            <Smartphone className="w-6 h-6 text-white" />
-            <span className="text-lg font-bold text-white font-[Google_Sans]">Google Pixel</span>
+        {/* Banner de la marca */}
+        <div className="h-32 bg-gradient-to-br from-zinc-900 via-[#1a1a30] to-[#241f3d] relative flex flex-col items-center justify-center gap-2">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40"
+            style={{
+              backgroundImage: 'radial-gradient(ellipse at 50% -30%, rgba(66,133,244,0.4), transparent 60%), radial-gradient(ellipse at 90% 120%, rgba(155,114,203,0.35), transparent 50%)',
+            }}
+          />
+          <div className="relative z-10">
+            <svg viewBox="0 0 64 64" width="64" height="64" aria-label="Google Gemini">
+              <defs>
+                <linearGradient id="gem-login" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stopColor="#4285F4"/>
+                  <stop offset="0.33" stopColor="#9B72CB"/>
+                  <stop offset="0.66" stopColor="#D96570"/>
+                  <stop offset="1" stopColor="#FABB05"/>
+                </linearGradient>
+              </defs>
+              <path fill="url(#gem-login)" d="M32 0c1.5 13.7 5.6 21.8 12.3 26.6C50.9 31.4 56.9 32.3 64 32c-13.4 1 -20.9 5.5 -24.4 13.6C36.1 53.6 33.6 59.7 32 64c-1.6-4.3-4.1-10.4-7.6-18.4C21 37.6 13.4 33 0 32c7.1-.3 13.1-0.6 19.7-5.4C26.4 21.8 30.5 13.7 32 0z"/>
+            </svg>
           </div>
+          <span className="relative z-10 text-lg font-bold text-white font-[Google_Sans]">Google Pixel</span>
         </div>
 
         <div className="p-8 pt-6">

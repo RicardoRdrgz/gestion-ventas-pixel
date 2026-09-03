@@ -10,7 +10,7 @@ import { fmtEur, fmtDate, escapeHtml } from '../lib/utils';
 import { Card, Badge, Spinner, Empty } from '../components/ui';
 import { VentasGoalCard } from '../components/VentasGoalCard';
 import {
-  TrendingUp, Clock, Wallet, AlertTriangle, Target, User, Smartphone,
+  TrendingUp, Clock, Wallet, AlertTriangle, Target, User,
   CheckCircle2, Calendar, ShoppingCart, ChevronRight, ArrowRight,
 } from 'lucide-react';
 import { Venta } from '../types/database.types';
@@ -86,17 +86,28 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <div className="bg-gradient-to-r from-blue-600/20 via-violet-600/20 to-red-500/20 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden">
-        <div className="relative z-10">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 border border-white/10 backdrop-blur mb-3">
-            <Smartphone className="w-3.5 h-3.5 text-blue-300" />
-            Google Pixel Promoter Hub
-          </span>
-          <h1 className="text-2xl font-bold text-zinc-50 font-[Google_Sans]">Panel de Rendimiento y Ventas</h1>
-          <p className="text-zinc-400 text-sm mt-1">
-            {config?.nombre ? escapeHtml(config.nombre) : 'Promotor'} · Zona {config?.zona ?? '—'} · TSM:{' '}
-            <span className="text-zinc-200">{escapeHtml(tsmDeZona(config?.zona))}</span>
-          </p>
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-[#1a1a30] to-[#241f3d] p-6">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage: 'radial-gradient(ellipse at 85% -20%, rgba(66,133,244,0.35), transparent 55%), radial-gradient(ellipse at 10% 120%, rgba(155,114,203,0.28), transparent 55%), radial-gradient(circle at 100% 100%, rgba(234,67,53,0.15), transparent 45%)',
+          }}
+        />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 border border-white/10 backdrop-blur mb-3">
+              <img src="/assets/gemini-logo.svg" alt="Gemini" className="w-3.5 h-3.5" />
+              Google Gemini Intelligence · Pixel Promoter Hub
+            </span>
+            <h1 className="text-2xl font-bold text-zinc-50 font-[Google_Sans] flex items-center gap-2.5">
+              <img src="/assets/google-pixel-logo.svg" alt="Google Pixel" className="w-8 h-8" />
+              Panel de Rendimiento y Ventas
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1">
+              {config?.nombre ? escapeHtml(config.nombre) : 'Promotor'} · Zona {config?.zona ?? '—'} · TSM:{' '}
+              <span className="text-zinc-200">{escapeHtml(tsmDeZona(config?.zona))}</span>
+            </p>
+          </div>
         </div>
       </div>
 

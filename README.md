@@ -99,7 +99,17 @@ VITE_SUPABASE_ANON_KEY=tu-anon-key-aqui
 > 🔒 Este archivo está excluido del repositorio mediante `.gitignore`. **Nunca** subas tus claves.
 
 ### 4. Configurar la Base de Datos en Supabase
-Ejecuta el script SQL [`supabase_schema.sql`](./supabase_schema.sql) en el **SQL Editor** de tu consola de Supabase para crear las tablas, activar RLS y los índices.
+Ejecuta el script SQL [`supabase_schema.sql`](./supabase_schema.sql) en el **SQL Editor** de tu consola de Supabase para crear las **20 tablas**, activar la **Row Level Security (RLS)** y los **índices** de rendimiento.
+
+**Pasos guiados (primer despliegue o base de datos vacía):**
+1. En el panel de Supabase, abre **SQL Editor** → **New query**.
+2. Abre el archivo `supabase_schema.sql` del repositorio, **copia todo su contenido** y pégalo en el editor (sustituyendo el texto por defecto).
+3. Pulsa **Run**.
+4. Deberías ver **"Success. No rows returned"** (es el resultado esperado: el script solo crea objetos, no devuelve filas).
+5. Comprueba en **Table Editor** que aparecen las 20 tablas bajo `public`: `inventario_pixel`, `clientes`, `promotores`, `tiendas`, `superiores`, `ventas`, `ventas_items`, `eventos`, `formularios`, `cumplimientos_form`, `reuniones`, `puntos_clave`, `objetivos`, `check_items`, `historial_objetivos`, `reportes_incidencia`, `incidencia_items`, `gastos` y `configuracion_usuario`.
+6. (Opcional) Revisa la pestaña **Policies** de cualquier tabla: debe tener las 4 políticas `RLS_<tabla>_{select,insert,update,delete}` con `USING (auth.uid() = user_id)`.
+
+> 💡 El script es **re-ejecutable e idempotente**: usa `CREATE TABLE IF NOT EXISTS` y `DROP POLICY IF EXISTS` + `CREATE POLICY`, por lo que puedes volver a ejecutarlo sin errores si ya se habían creado algunos objetos. Nota técnica: PostgreSQL **no** soporta `CREATE POLICY IF NOT EXISTS` (de ahí el patrón drop/create). No incluye comentarios para evitar cualquier problema de copiado/pegado desde el editor.
 
 ### 5. Iniciar el Servidor de Desarrollo
 ```bash
@@ -192,6 +202,20 @@ Puedes publicar la app sin pagar y acceder desde cualquier dispositivo sin tu PC
 **Después del despliegue, actualiza Supabase** para que los emails (confirmación y recuperación) apunten a tu URL pública:
 - `Authentication → URL Configuration → Site URL`: `https://gestion-ventas-pixel.vercel.app`
 - `Redirect URLs`: añade `https://gestion-ventas-pixel.vercel.app/reset-password` y `https://gestion-ventas-pixel.vercel.app/**`
+
+---
+
+## 🎨 Personalización de Marca
+
+El dashboard está personalizado con la identidad **Google / Gemini / Google Pixel** (uso interno autorizado por la empresa):
+
+- **`public/assets/gemini-logo.svg`**: símbolo de Google Gemini (estrella con degradado azul → violeta → magenta).
+- **`public/assets/google-pixel-logo.svg`**: logotipo del smartphone Google Pixel (con la "G" de Google en el módulo de cámara).
+- **Banner del Panel** (`Dashboard.tsx`): fondo con **degradado sutil** en tonos oscuros y el logotipo nítido de Pixel + badge de **Google Gemini Intelligence**.
+- **Sidebar y cabecera móvil** (`AppLayout.tsx`): logotipo de Google Pixel sustituyendo al icono genérico anterior.
+- **Pantalla de login** (`AuthModal.tsx`): logotipo de Gemini grande y central sobre un degradado a juego.
+
+Para cambiar los logotipos, sustituye los archivos `public/assets/*.svg` por tus versiones oficiales en el mismo tamaño.
 
 ---
 
