@@ -99,7 +99,7 @@ export function Dashboard() {
             Google Gemini Intelligence · Pixel Promoter Hub
           </span>
           <h1 className="text-2xl font-bold text-zinc-50 font-[Google_Sans] flex items-center gap-2.5">
-            <img src="/assets/google-g-logo.svg" alt="Google" className="w-7 h-7" />
+            <img src="/assets/google-g-logo.svg" alt="Google" className="w-5 h-5" />
             Panel de Rendimiento y Ventas
           </h1>
           <p className="text-zinc-400 text-sm mt-1">
