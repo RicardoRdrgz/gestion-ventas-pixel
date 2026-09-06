@@ -166,7 +166,7 @@ export function VentaForm() {
                 <div className="col-span-12 sm:col-span-5">
                   <select className="inp" value={l.producto_id ?? ''} onChange={(e) => handleProductoSeleccionado(i, e.target.value)}>
                     <option value="">— Seleccionar del catálogo —</option>
-                    {productos.filter((p) => p.activo).map((p) => <option key={p.id} value={p.id}>{p.nombre} ({p.stock} uds)</option>)}
+                    {productos.filter((p) => p.activo).map((p) => <option key={p.id} value={p.id}>{p.nombre}{p.color ? ` · ${p.color}` : ''}{p.capacidad ? ` · ${p.capacidad}` : ''} ({p.stock} uds)</option>)}
                   </select>
                 </div>
                 <div className="col-span-12 sm:col-span-2">
