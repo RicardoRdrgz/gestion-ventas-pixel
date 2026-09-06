@@ -53,8 +53,7 @@ function Productos({ uid }: { uid: string | null }) {
     catApi.list(uid).then(setItems).catch(console.error).finally(() => setLoading(false));
   }, [uid]);
 
-  const guardar = async (e: React.FormEvent, form: any) => {
-    e.preventDefault();
+  const guardar = async (form: any) => {
     if (!uid) return;
     setSaving(true);
     try {
@@ -105,7 +104,7 @@ function Productos({ uid }: { uid: string | null }) {
       </Card>
 
       <Modal open={!!modal} onClose={() => setModal(null)} title={modal?.id ? 'Editar producto' : 'Nuevo producto'}>
-        {modal && <ProductoForm key={modal.id} data={modal} saving={saving} onSave={(v) => guardar(v, v)} />}
+        {modal && <ProductoForm key={modal.id} data={modal} saving={saving} onSave={(v) => guardar(v)} />}
       </Modal>
       <ConfirmDialog open={!!del} title="Eliminar producto" message={`¿Eliminar "${del?.nombre}"?`} onCancel={() => setDel(null)} onConfirm={async () => { if (uid && del) { await catApi.remove(uid, del.id); setDel(null); setItems(await catApi.list(uid)); } }} />
     </>
