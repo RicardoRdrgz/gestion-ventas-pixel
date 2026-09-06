@@ -216,9 +216,31 @@ export const ventaApi = {
       });
       if (itErr) throw itErr;
     }
+
+    if (input.estado === 'completada') {
+      for (const item of input.items) {
+        if (item.producto_id) {
+          const { error: rpcErr } = await supabase.rpc('descontar_stock', {
+            p_producto_id: item.producto_id,
+            p_cantidad: Number(item.cantidad) || 1,
+          });
+          if (rpcErr) throw rpcErr;
+        }
+      }
+    }
+
     return ventaId;
   },
   async update(userId: string, id: string, p: { fecha?: string; estado?: Venta['estado']; notas?: string; cliente_id?: string | null }): Promise<void> {
+    const { data: prev, error: prevErr } = await supabase
+      .from('ventas').select('estado').eq('id', id).eq('user_id', userId).maybeSingle();
+    if (prevErr) throw prevErr;
+    const prevEstado = prev?.estado as Venta['estado'] | undefined;
+
+    const { data: items, error: itemsErr } = await supabase
+      .from('ventas_items').select('producto_id, cantidad').eq('venta_id', id);
+    if (itemsErr) throw itemsErr;
+
     const { error } = await supabase.from('ventas').update({
       fecha: p.fecha,
       estado: p.estado,
@@ -226,10 +248,45 @@ export const ventaApi = {
       cliente_id: p.cliente_id !== undefined ? p.cliente_id : undefined,
     }).eq('id', id).eq('user_id', userId);
     if (error) throw error;
+
+    if (p.estado && prevEstado && p.estado !== prevEstado) {
+      const eraCompletada = prevEstado === 'completada';
+      const seraCompletada = p.estado === 'completada';
+      if (eraCompletada !== seraCompletada) {
+        const fn = seraCompletada ? 'descontar_stock' : 'reponer_stock';
+        for (const item of items ?? []) {
+          if (!item.producto_id) continue;
+          const { error: rpcErr } = await supabase.rpc(fn, {
+            p_producto_id: item.producto_id,
+            p_cantidad: Number(item.cantidad) || 1,
+          });
+          if (rpcErr) throw rpcErr;
+        }
+      }
+    }
   },
   async remove(userId: string, id: string): Promise<void> {
+    const { data: prev, error: prevErr } = await supabase
+      .from('ventas').select('estado').eq('id', id).eq('user_id', userId).maybeSingle();
+    if (prevErr) throw prevErr;
+
+    const { data: items, error: itemsErr } = await supabase
+      .from('ventas_items').select('producto_id, cantidad').eq('venta_id', id);
+    if (itemsErr) throw itemsErr;
+
     const { error } = await supabase.from('ventas').delete().eq('id', id).eq('user_id', userId);
     if (error) throw error;
+
+    if (prev?.estado === 'completada') {
+      for (const item of items ?? []) {
+        if (!item.producto_id) continue;
+        const { error: rpcErr } = await supabase.rpc('reponer_stock', {
+          p_producto_id: item.producto_id,
+          p_cantidad: Number(item.cantidad) || 1,
+        });
+        if (rpcErr) throw rpcErr;
+      }
+    }
   },
 };
 

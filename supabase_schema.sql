@@ -255,3 +255,29 @@ CREATE INDEX IF NOT EXISTS idx_check_items_objetivo ON public.check_items(objeti
 CREATE INDEX IF NOT EXISTS idx_incidencia_reporte ON public.incidencia_items(reporte_id);
 CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON public.gastos(fecha DESC);
 CREATE INDEX IF NOT EXISTS idx_reuniones_fecha ON public.reuniones(fecha DESC);
+
+CREATE OR REPLACE FUNCTION public.descontar_stock(p_producto_id uuid, p_cantidad integer)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.inventario_pixel
+  SET stock = GREATEST(stock - p_cantidad, 0), updated_at = now()
+  WHERE id = p_producto_id AND user_id = auth.uid();
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.descontar_stock(uuid, integer) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.reponer_stock(p_producto_id uuid, p_cantidad integer)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.inventario_pixel
+  SET stock = stock + p_cantidad, updated_at = now()
+  WHERE id = p_producto_id AND user_id = auth.uid();
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.reponer_stock(uuid, integer) TO authenticated;
