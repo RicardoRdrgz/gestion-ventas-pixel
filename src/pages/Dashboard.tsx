@@ -19,7 +19,7 @@ export function Dashboard() {
   const { user } = useAuth();
   const uid = user?.id ?? null;
   const [ventas, setVentas] = useState<Venta[]>([]);
-  const [itemsMes, setItemsMes] = useState<any[]>([]);
+  const [itemsComision, setItemsComision] = useState<any[]>([]);
   const [gastos, setGastos] = useState<any[]>([]);
   const [objetivos, setObjetivos] = useState<any[]>([]);
   const [formularios, setFormularios] = useState<any[]>([]);
@@ -42,13 +42,15 @@ export function Dashboard() {
         setConfig(c);
 
         const mes = new Date();
-        const ids = d.ventas
-          .filter((v) => esMismoMes(v.fecha, mes))
-          .map((v) => v.id);
-        if (ids.length > 0) {
+        const ventasMes = d.ventas.filter((v) => esMismoMes(v.fecha, mes));
+        const ventasCompletadas = ventasMes
+          .filter((v) => v.estado === 'completada')
+          .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+        const idsCom = ventasCompletadas.map((v) => v.id);
+        if (idsCom.length > 0) {
           const { data: items } = await supabase
-            .from('ventas_items').select('*').eq('user_id', uid).in('venta_id', ids);
-          setItemsMes((items ?? []) as any[]);
+            .from('ventas_items').select('*').eq('user_id', uid).in('venta_id', idsCom);
+          setItemsComision((items ?? []) as any[]);
         }
       } catch (e) {
         console.error(e);
@@ -66,20 +68,20 @@ export function Dashboard() {
   );
   const gastosMes = useMemo(() => gastos.filter((g) => esMismoMes(g.fecha, ahora)), [gastos, ahora]);
   const resumen = useMemo(() => resumenGastos(gastosMes), [gastosMes]);
-  const comisiones = useMemo(() => calcularComisiones(itemsMes), [itemsMes]);
+  const comisiones = useMemo(() => calcularComisiones(itemsComision), [itemsComision]);
   const incidenciasAbiertas = useMemo(() => incidencias.filter((i) => i.estado !== 'resuelta'), [incidencias]);
   const objetivosActivos = useMemo(() => objetivos.filter((o) => o.activo), [objetivos]);
 
   const topProductos = useMemo(() => {
     const mapa = new Map<string, { unidades: number; total: number }>();
-    for (const it of itemsMes) {
+    for (const it of itemsComision) {
       const cur = mapa.get(it.producto_nombre) ?? { unidades: 0, total: 0 };
       cur.unidades += Number(it.cantidad);
       cur.total += Number(it.cantidad) * Number(it.precio_unitario);
       mapa.set(it.producto_nombre, cur);
     }
     return [...mapa.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 5);
-  }, [itemsMes]);
+  }, [itemsComision]);
 
   if (loading) return <Spinner label="Cargando panel…" />;
 
@@ -171,7 +173,7 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Comisiones */}
-        <Card title="Comisiones del mes" className="lg:col-span-2" actions={<Badge color="blue">3 gratis · tope 14</Badge>}>
+        <Card title="Comisiones del mes" className="lg:col-span-2" actions={<Badge color="blue">3 primeros sin comisión · tope 14</Badge>}>
           {comisiones.items.length === 0 ? (
             <Empty msg="Registra ventas para calcular comisiones" />
           ) : (
@@ -180,14 +182,14 @@ export function Dashboard() {
                 <div key={it.producto} className="flex items-center justify-between border-b border-zinc-800 pb-2 last:border-0">
                   <div>
                     <div className="text-sm font-medium text-zinc-200">{escapeHtml(it.producto)}</div>
-                    <div className="text-[0.7rem] text-zinc-500">{it.unidades} uds · {it.gratis} gratis · {it.pagadas} pagadas</div>
+                    <div className="text-[0.7rem] text-zinc-500">{it.unidades} uds · {it.comisionadas} comisionadas</div>
                   </div>
-                  <div className="text-sm font-bold text-emerald-400">{fmtEur(it.pagadas * it.comision)}</div>
+                  <div className="text-sm font-bold text-emerald-400">{fmtEur(it.comision)}</div>
                 </div>
               ))}
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-zinc-400">Total unidades pagadas / tope</span>
-                <span className="text-xs font-semibold text-zinc-200">{comisiones.totalPagadas} / 14</span>
+              <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+                <span className="text-xs text-zinc-400">Los 3 primeros de la gama no comisionan · desde la 4ª unidad</span>
+                <span className="text-xs font-semibold text-zinc-200">Comisionadas {comisiones.totalComisionadas} / 14</span>
               </div>
             </div>
           )}

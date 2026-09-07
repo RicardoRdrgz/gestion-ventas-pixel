@@ -9,9 +9,9 @@
 import { monthKey, startOfMonth, endOfMonth } from './utils';
 
 export interface ComisionConfig {
-  /** Unidades gratis antes de empezar a cobrar comisión. */
+  /** Primeras unidades que no comisionan. */
   gratis: number;
-  /** Tope máximo de unidades pagadas al mes. */
+  /** Tope máximo de unidades comisionadas al mes. */
   tope: number;
 }
 
@@ -29,72 +29,68 @@ export const COMISION_DEFAULT = 0;
 export interface ComisionItem {
   producto: string;
   unidades: number;
-  pagadas: number;
-  gratis: number;
+  noComision: number;
+  comisionadas: number;
   comision: number;
 }
 
 export interface ResumenComisiones {
   items: ComisionItem[];
   totalUnidades: number;
-  totalPagadas: number;
+  totalComisionadas: number;
   totalComision: number;
 }
 
 /**
- * Calcula las comisiones del mes según el modelo:
- * por cada producto, las primeras N unidades son gratis y el resto se pagan
- * hasta un tope de unidades pagadas.
+ * Calcula las comisiones del mes:
+ * Solo comisionan Pixel 11 (20€), Pixel 11 Pro (25€), Pixel 11 Pro XL (25€).
+ * Las 3 primeras unidades vendidas de esos 3 modelos no comisionan.
+ * Desde la 4ª unidad (de esos modelos) empieza a comisionar hasta 14 unidades.
+ * Otros modelos no cuentan para nada.
+ * Las ventas se procesan por orden FIFO (fecha ascendente).
  */
 export function calcularComisiones(
   ventasMes: { producto_nombre: string; cantidad: number }[],
   config: ComisionConfig = { gratis: 3, tope: 14 },
 ): ResumenComisiones {
-  const porProducto = new Map<string, number>();
   const claves = Object.keys(COMISIONES_PRODUCTO).sort((a, b) => b.length - a.length);
+
+  const stream: { etiqueta: string; comision: number }[] = [];
   for (const v of ventasMes) {
+    const unidades = Number(v.cantidad) || 0;
+    if (unidades <= 0) continue;
     const clave = claves.find((k) =>
       v.producto_nombre.toLowerCase().includes(k.toLowerCase()),
-    ) ?? v.producto_nombre;
-    porProducto.set(clave, (porProducto.get(clave) ?? 0) + Number(v.cantidad));
+    );
+    if (!clave) continue;
+    const cfg = COMISIONES_PRODUCTO[clave];
+    for (let i = 0; i < unidades; i++) stream.push(cfg);
+  }
+
+  let noComRestante = config.gratis;
+  let comisionRestante = config.tope;
+  const stats = new Map<string, { unidades: number; noComision: number; comisionadas: number; comision: number }>();
+
+  for (const u of stream) {
+    if (!stats.has(u.etiqueta)) stats.set(u.etiqueta, { unidades: 0, noComision: 0, comisionadas: 0, comision: 0 });
+    const s = stats.get(u.etiqueta)!;
+    s.unidades++;
+    if (noComRestante > 0) { noComRestante--; s.noComision++; }
+    else if (comisionRestante > 0) { comisionRestante--; s.comisionadas++; s.comision += u.comision; }
   }
 
   let totalUnidades = 0;
-  let totalPagadas = 0;
+  let totalComisionadas = 0;
   let totalComision = 0;
   const items: ComisionItem[] = [];
-
-  for (const [producto, unidades] of porProducto) {
-    const cfg = COMISIONES_PRODUCTO[producto];
-    const comision = cfg?.comision ?? COMISION_DEFAULT;
-    const gratis = Math.min(unidades, config.gratis);
-    // Contabilidad global del tope: primero computamos pagadas brutas por producto,
-    // luego aplicamos el tope global más abajo.
-    items.push({
-      producto,
-      unidades,
-      gratis,
-      pagadas: Math.max(0, unidades - gratis),
-      comision,
-    });
-    totalUnidades += unidades;
+  for (const [producto, s] of stats) {
+    items.push({ producto, unidades: s.unidades, noComision: s.noComision, comisionadas: s.comisionadas, comision: s.comision });
+    totalUnidades += s.unidades;
+    totalComisionadas += s.comisionadas;
+    totalComision += s.comision;
   }
 
-  // Aplicar tope global de unidades pagadas (14/mes).
-  let pagadasAcum = 0;
-  let comisionAcum = 0;
-  const itemsFinal = items.map((it) => {
-    const disponibles = Math.max(0, config.tope - pagadasAcum);
-    const pagadas = Math.min(it.pagadas, disponibles);
-    pagadasAcum += pagadas;
-    comisionAcum += pagadas * it.comision;
-    return { ...it, pagadas };
-  });
-
-  totalPagadas = pagadasAcum;
-  totalComision = comisionAcum;
-
-  return { items: itemsFinal, totalUnidades, totalPagadas, totalComision };
+  return { items, totalUnidades, totalComisionadas, totalComision };
 }
 
 // ---------------------------------------------------------------------------
